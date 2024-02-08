@@ -1,28 +1,20 @@
-!define APPNAME             "OpenRCT2"
-!define APPVERSION          "${APPV_MAIN}${APPV_EXTRA}"
-!define APPVERSIONINTERNAL  "${APPV_MAIN}.0"
-!define APPNAMEANDVERSION   "${APPNAME} ${APPVERSION}"
-!define APPURLLINK          "https://github.com/OpenRCT2/OpenRCT2"
-!define OPENRCT2_EXE        "openrct2.exe"
-!define OPENRCT2_COM        "openrct2.com"
+# Version numbers to update
+!define /ifndef APPV_MAJOR 0
+!define /ifndef APPV_MINOR 0
+!define /ifndef APPV_MAINT 3
+!define /ifndef APPV_BUILD 1
+!define /ifndef APPV_EXTRA "-beta"
 
-!if "${PLATFORM}" == "Win32"
-    !define APPBITS         32
-    !define APPARCH         "win32"
+!define APPNAME "OpenRCT2"   ; Define application name
+!define APPVERSION "${APPV_MAJOR}.${APPV_MINOR}.${APPV_MAINT}${APPV_EXTRA}"  ; Define application version
+!define APPVERSIONINTERNAL "${APPV_MAJOR}.${APPV_MINOR}.${APPV_MAINT}.${APPV_BUILD}" ; Define application version in X.X.X.X
+!include ${VERSION_INCLUDE}
 
-    InstallDir "$PROGRAMFILES32\OpenRCT2\"
-!else
-    !define APPBITS         64
-    !define APPARCH         "win64"
-
-    InstallDir "$PROGRAMFILES64\OpenRCT2\"
-!endif
-
-!define SUPPORTED_OS        "Windows 7 and later"
+!define /ifndef APPURLLINK "https://github.com/OpenRCT2/OpenRCT2"
+!define APPNAMEANDVERSION "${APPNAME} ${APPVERSION}"
 
 ; Define root variable relative to installer
 !define PATH_ROOT "..\..\"
-!define BINARY_DIR      "${PATH_ROOT}bin"
 
 !define MUI_ICON "${PATH_ROOT}resources\logo\icon.ico"
 !define MUI_UNICON "${PATH_ROOT}resources\logo\icon.ico"
@@ -35,7 +27,7 @@ SetCompressor LZMA
 
 ; Version Info
 VIProductVersion "${APPVERSIONINTERNAL}"
-VIAddVersionKey "ProductName" "OpenRCT2 ${APPBITS}-bit Installer for ${SUPPORTED_OS}"
+VIAddVersionKey "ProductName" "OpenRCT2 ${APPBITS}-bit Installer for Windows ${EXTRA_VERSION}"
 VIAddVersionKey "Comments" "Installs ${APPNAMEANDVERSION}"
 VIAddVersionKey "CompanyName" "OpenRCT2 Developers"
 VIAddVersionKey "FileDescription" "Installs ${APPNAMEANDVERSION}"
@@ -44,12 +36,12 @@ VIAddVersionKey "InternalName" "InstOpenRCT2-${APPARCH}"
 VIAddVersionKey "FileVersion" "${APPVERSION}-${APPARCH}"
 VIAddVersionKey "LegalCopyright" " "
 ; Main Install settings
-Name "${APPNAMEANDVERSION} ${APPBITS}-bit for ${SUPPORTED_OS}"
+Name "${APPNAMEANDVERSION} ${APPBITS}-bit for Windows ${EXTRA_VERSION}"
 
 ; NOTE: Keep trailing backslash!
 InstallDirRegKey HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\OpenRCT2" "Install Folder"
 !ifndef OUTFILE
-    !define OUTFILE "openrct2-install.exe"
+	!define OUTFILE "openrct2-${APPVERSION}-${APPARCH}.exe"
 !endif
 OutFile "${OUTFILE}"
 CRCCheck force
@@ -57,7 +49,7 @@ CRCCheck force
 ShowInstDetails show
 ShowUninstDetails show
 
-RequestExecutionLevel user
+RequestExecutionLevel admin
 
 Var SHORTCUTS
 
@@ -66,7 +58,6 @@ Var SHORTCUTS
 !include "InstallOptions.nsh"
 !include "WinVer.nsh"
 !include "x64.nsh"
-!include "UAC.nsh"
 
 !define MUI_ABORTWARNING
 !define MUI_WELCOMEPAGE_TITLE_3LINES
@@ -92,8 +83,7 @@ ManifestDPIAware true
 
 !define MUI_FINISHPAGE_TITLE_3LINES
 !define MUI_FINISHPAGE_RUN_TEXT "Run ${APPNAMEANDVERSION} now!"
-!define MUI_FINISHPAGE_RUN
-!define MUI_FINISHPAGE_RUN_FUNCTION PageFinishRun
+!define MUI_FINISHPAGE_RUN "$INSTDIR\openrct2.exe"
 !define MUI_FINISHPAGE_LINK "Visit the OpenRCT2 site for more information"
 !define MUI_FINISHPAGE_LINK_LOCATION "${APPURLLINK}"
 !define MUI_FINISHPAGE_NOREBOOTSUPPORT
@@ -110,35 +100,6 @@ ManifestDPIAware true
 !insertmacro MUI_LANGUAGE "English"
 !insertmacro MUI_RESERVEFILE_LANGDLL
 
-!macro Init thing
-uac_tryagain:
-!insertmacro UAC_RunElevated
-${Switch} $0
-${Case} 0
-	${IfThen} $1 = 1 ${|} Quit ${|} ;we are the outer process, the inner process has done its work, we are done
-	${IfThen} $3 <> 0 ${|} ${Break} ${|} ;we are admin, let the show go on
-	${If} $1 = 3 ;RunAs completed successfully, but with a non-admin user
-		MessageBox mb_YesNo|mb_IconExclamation|mb_TopMost|mb_SetForeground "This ${thing} requires admin privileges, try again" /SD IDNO IDYES uac_tryagain IDNO 0
-	${EndIf}
-	;fall-through and die
-${Case} 1223
-	MessageBox mb_IconStop|mb_TopMost|mb_SetForeground "This ${thing} requires admin privileges, aborting!"
-	Quit
-${Case} 1062
-	MessageBox mb_IconStop|mb_TopMost|mb_SetForeground "Logon service not running, aborting!"
-	Quit
-${Default}
-	MessageBox mb_IconStop|mb_TopMost|mb_SetForeground "Unable to elevate, error $0"
-	Quit
-${EndSwitch}
-
-SetShellVarContext all
-!macroend
-
-Function PageFinishRun
-!insertmacro UAC_AsUser_ExecShell "" "$INSTDIR\${OPENRCT2_EXE}" "" "" ""
-FunctionEnd
-
 ;--------------------------------------------------------------
 ; (Core) OpenRCT2 install section. Copies all internal game data
 Section "!OpenRCT2" Section1
@@ -150,12 +111,22 @@ Section "!OpenRCT2" Section1
 
     SetShellVarContext all
 
+    ; Copy language files
+    SetOutPath "$INSTDIR\data\language\"
+    File ${PATH_ROOT}data\language\*.txt
+
     ; Copy data files
     SetOutPath "$INSTDIR\data\"
-    File /r ${PATH_ROOT}bin\data\*
+    File /r ${PATH_ROOT}data\*
 
     ; Copy the rest of the stuff
     SetOutPath "$INSTDIR\"
+
+	; Copy curl ca file
+	File ..\..\curl-ca-bundle.crt
+
+    ; Copy curl ca file
+    File ..\..\curl-ca-bundle.crt
 
     ; Copy text files
     File ..\changelog.txt
@@ -170,20 +141,15 @@ Section "!OpenRCT2" Section1
     File ..\..\contributors.md
     Push "$INSTDIR\contributors.md"
     Call unix2dos
-    File ..\scripting.md
-    Push "$INSTDIR\scripting.md"
-    Call unix2dos
-    File ..\openrct2.d.ts
-    Push "$INSTDIR\openrct2.d.ts"
-    Call unix2dos
 
     ; Copy executable
-    File /oname=${OPENRCT2_EXE} ${BINARY_DIR}\${OPENRCT2_EXE}
-    File /oname=${OPENRCT2_COM} ${BINARY_DIR}\${OPENRCT2_COM}
+    File /oname=openrct2.exe ${BINARY_DIR}\openrct2.exe
+    File /oname=openrct2.dll ${BINARY_DIR}\openrct2.dll
+    File /oname=SDL2.dll ${BINARY_DIR}\SDL2.dll
 
     ; Create the Registry Entries
     WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\OpenRCT2" "Comments" "Visit ${APPURLLINK}"
-    WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\OpenRCT2" "DisplayIcon" "$INSTDIR\${OPENRCT2_EXE},0"
+    WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\OpenRCT2" "DisplayIcon" "$INSTDIR\openrct2.exe,0"
     WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\OpenRCT2" "DisplayName" "OpenRCT2 ${APPVERSION}"
     WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\OpenRCT2" "DisplayVersion" "${APPVERSION}"
     WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\OpenRCT2" "HelpLink" "${APPURLLINK}"
@@ -196,10 +162,9 @@ Section "!OpenRCT2" Section1
     WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\OpenRCT2" "Version" "${APPVERSIONINTERNAL}"
 
     !insertmacro MUI_STARTMENU_WRITE_BEGIN "OpenRCT2"
-    CreateShortCut "$DESKTOP\OpenRCT2.lnk" "$INSTDIR\${OPENRCT2_EXE}"
+    CreateShortCut "$DESKTOP\OpenRCT2.lnk" "$INSTDIR\openrct2.exe"
     CreateDirectory "$SMPROGRAMS\$SHORTCUTS"
-    CreateShortCut "$SMPROGRAMS\$SHORTCUTS\OpenRCT2.lnk" "$INSTDIR\${OPENRCT2_EXE}"
-    CreateShortCut "$SMPROGRAMS\$SHORTCUTS\OpenRCT2-verbose.lnk" "%WINDIR%\System32\cmd.exe" '/C "$INSTDIR\${OPENRCT2_COM}" --verbose'
+    CreateShortCut "$SMPROGRAMS\$SHORTCUTS\OpenRCT2.lnk" "$INSTDIR\openrct2.exe"
     CreateShortCut "$SMPROGRAMS\$SHORTCUTS\Uninstall.lnk" "$INSTDIR\uninstall.exe"
     CreateShortCut "$SMPROGRAMS\$SHORTCUTS\Readme.lnk" "$INSTDIR\Readme.txt"
     CreateShortCut "$SMPROGRAMS\$SHORTCUTS\Changelog.lnk" "$INSTDIR\Changelog.txt"
@@ -235,7 +200,6 @@ Section "Uninstall"
     ; Delete Shortcuts
     Delete "$DESKTOP\OpenRCT2.lnk"
     Delete "$SMPROGRAMS\$SHORTCUTS\OpenRCT2.lnk"
-    Delete "$SMPROGRAMS\$SHORTCUTS\OpenRCT2-verbose.lnk"
     Delete "$SMPROGRAMS\$SHORTCUTS\Uninstall.lnk"
     Delete "$SMPROGRAMS\$SHORTCUTS\Readme.lnk"
     Delete "$SMPROGRAMS\$SHORTCUTS\Changelog.lnk"
@@ -243,20 +207,23 @@ Section "Uninstall"
 
     ; Clean up OpenRCT2 dir
     Delete "$INSTDIR\changelog.txt"
-    Delete "$INSTDIR\licence.txt"
     Delete "$INSTDIR\readme.txt"
     Delete "$INSTDIR\contributors.md"
-    Delete "$INSTDIR\scripting.md"
-    Delete "$INSTDIR\openrct2.d.ts"
-    Delete "$INSTDIR\${OPENRCT2_EXE}"
-    Delete "$INSTDIR\${OPENRCT2_COM}"
+    Delete "$INSTDIR\openrct2.exe"
+    Delete "$INSTDIR\openrct2.dll"
+    Delete "$INSTDIR\SDL2.dll"
+    Delete "$INSTDIR\licence.txt"
     Delete "$INSTDIR\INSTALL.LOG"
+    Delete "$INSTDIR\crash.log"
+    Delete "$INSTDIR\crash.dmp"
 
     ; Data files
-    RMDir /r "$INSTDIR\data"
+    Delete "$INSTDIR\data\language\*.txt"
+    Delete "$INSTDIR\data\title\*.*"
 
     ; Remove remaining directories
     RMDir "$SMPROGRAMS\$SHORTCUTS"
+    RMDir "$INSTDIR\data"
     RMDir "$INSTDIR"
 
 SectionEnd
@@ -324,13 +291,13 @@ FunctionEnd
 ;-------------------------------------------------------------------------------
 ; Check whether OpenRCT2 is running
 Function CheckOpenRCT2Running
-    IfFileExists "$INSTDIR\${OPENRCT2_EXE}" 0 Done
+    IfFileExists "$INSTDIR\openrct2.exe" 0 Done
 Retry:
-    FindProcDLL::FindProc "${OPENRCT2_EXE}"
+    FindProcDLL::FindProc "openrct2.exe"
     Pop $R0
     IntCmp $R0 1 0 Done
     ClearErrors
-    Delete "$INSTDIR\${OPENRCT2_EXE}"
+    Delete "$INSTDIR\openrct2.exe"
     IfErrors 0 Done
     ClearErrors
     MessageBox MB_RETRYCANCEL|MB_ICONEXCLAMATION "OpenRCT2 is running. Please close it and retry." IDRETRY Retry
@@ -402,88 +369,88 @@ FunctionEnd
 ;    $var=1  Version1 is newer
 ;    $var=2  Version2 is newer
 Function VersionCompare
-    !define VersionCompare `!insertmacro VersionCompareCall`
+	!define VersionCompare `!insertmacro VersionCompareCall`
 
-    !macro VersionCompareCall _VER1 _VER2 _RESULT
-        Push `${_VER1}`
-        Push `${_VER2}`
-        Call VersionCompare
-        Pop ${_RESULT}
-    !macroend
+	!macro VersionCompareCall _VER1 _VER2 _RESULT
+		Push `${_VER1}`
+		Push `${_VER2}`
+		Call VersionCompare
+		Pop ${_RESULT}
+	!macroend
 
-    Exch $1
-    Exch
-    Exch $0
-    Exch
-    Push $2
-    Push $3
-    Push $4
-    Push $5
-    Push $6
-    Push $7
+	Exch $1
+	Exch
+	Exch $0
+	Exch
+	Push $2
+	Push $3
+	Push $4
+	Push $5
+	Push $6
+	Push $7
 
-    begin:
-    StrCpy $2 -1
-    IntOp $2 $2 + 1
-    StrCpy $3 $0 1 $2
-    StrCmp $3 '' +2
-    StrCmp $3 '.' 0 -3
-    StrCpy $4 $0 $2
-    IntOp $2 $2 + 1
-    StrCpy $0 $0 '' $2
+	begin:
+	StrCpy $2 -1
+	IntOp $2 $2 + 1
+	StrCpy $3 $0 1 $2
+	StrCmp $3 '' +2
+	StrCmp $3 '.' 0 -3
+	StrCpy $4 $0 $2
+	IntOp $2 $2 + 1
+	StrCpy $0 $0 '' $2
 
-    StrCpy $2 -1
-    IntOp $2 $2 + 1
-    StrCpy $3 $1 1 $2
-    StrCmp $3 '' +2
-    StrCmp $3 '.' 0 -3
-    StrCpy $5 $1 $2
-    IntOp $2 $2 + 1
-    StrCpy $1 $1 '' $2
+	StrCpy $2 -1
+	IntOp $2 $2 + 1
+	StrCpy $3 $1 1 $2
+	StrCmp $3 '' +2
+	StrCmp $3 '.' 0 -3
+	StrCpy $5 $1 $2
+	IntOp $2 $2 + 1
+	StrCpy $1 $1 '' $2
 
-    StrCmp $4$5 '' equal
+	StrCmp $4$5 '' equal
 
-    StrCpy $6 -1
-    IntOp $6 $6 + 1
-    StrCpy $3 $4 1 $6
-    StrCmp $3 '0' -2
-    StrCmp $3 '' 0 +2
-    StrCpy $4 0
+	StrCpy $6 -1
+	IntOp $6 $6 + 1
+	StrCpy $3 $4 1 $6
+	StrCmp $3 '0' -2
+	StrCmp $3 '' 0 +2
+	StrCpy $4 0
 
-    StrCpy $7 -1
-    IntOp $7 $7 + 1
-    StrCpy $3 $5 1 $7
-    StrCmp $3 '0' -2
-    StrCmp $3 '' 0 +2
-    StrCpy $5 0
+	StrCpy $7 -1
+	IntOp $7 $7 + 1
+	StrCpy $3 $5 1 $7
+	StrCmp $3 '0' -2
+	StrCmp $3 '' 0 +2
+	StrCpy $5 0
 
-    StrCmp $4 0 0 +2
-    StrCmp $5 0 begin newer2
-    StrCmp $5 0 newer1
-    IntCmp $6 $7 0 newer1 newer2
+	StrCmp $4 0 0 +2
+	StrCmp $5 0 begin newer2
+	StrCmp $5 0 newer1
+	IntCmp $6 $7 0 newer1 newer2
 
-    StrCpy $4 '1$4'
-    StrCpy $5 '1$5'
-    IntCmp $4 $5 begin newer2 newer1
+	StrCpy $4 '1$4'
+	StrCpy $5 '1$5'
+	IntCmp $4 $5 begin newer2 newer1
 
-    equal:
-    StrCpy $0 0
-    goto end
-    newer1:
-    StrCpy $0 1
-    goto end
-    newer2:
-    StrCpy $0 2
+	equal:
+	StrCpy $0 0
+	goto end
+	newer1:
+	StrCpy $0 1
+	goto end
+	newer2:
+	StrCpy $0 2
 
-    end:
-    Pop $7
-    Pop $6
-    Pop $5
-    Pop $4
-    Pop $3
-    Pop $2
-    Pop $1
-    Exch $0
+	end:
+	Pop $7
+	Pop $6
+	Pop $5
+	Pop $4
+	Pop $3
+	Pop $2
+	Pop $1
+	Exch $0
 FunctionEnd
 
 
@@ -493,16 +460,21 @@ Var UninstallString
 ;-----------------------------------------------------------------------------------
 ; NSIS Initialize function, determine if we are going to install/upgrade or uninstall
 Function .onInit
-    !insertmacro Init "installer"
     StrCpy $SHORTCUTS "OpenRCT2"
 
     SectionSetFlags 0 17
 
+    ; Starts Setup - let's look for an older version of OpenRCT2
+    ReadRegStr $R8 HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\OpenRCT2" "Version"
+
+    IfErrors ShowWelcomeMessage ShowUpgradeMessage
 ShowWelcomeMessage:
-    IfSilent FinishCallback
     ReadRegStr $R8 HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\OpenRCT2" "Version"
     IfErrors FinishCallback
 
+ShowUpgradeMessage:
+	${VersionCompare} "${APPVERSIONINTERNAL}" "$R8" $R0
+    IntCmp $R0 1 WelcomeToSetup VersionsAreEqual InstallerIsOlder
 WelcomeToSetup:
     ; An older version was found.  Let's let the user know there's an upgrade that will take place.
     ReadRegStr $OLDVERSION HKEY_LOCAL_MACHINE "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\OpenRCT2" "DisplayVersion"
@@ -511,13 +483,29 @@ WelcomeToSetup:
         "Welcome to ${APPNAMEANDVERSION} Setup.$\nThis will allow you to upgrade from version $OLDVERSION."
     Goto FinishCallback
 
+VersionsAreEqual:
+    ReadRegStr $UninstallString HKEY_LOCAL_MACHINE "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\OpenRCT2" "UninstallString"
+    IfFileExists "$UninstallString" "" FinishCallback
+    MessageBox MB_YESNO|MB_ICONQUESTION \
+        "Setup detected ${APPNAMEANDVERSION} on your system. This is the same version that this program will install.$\nAre you trying to uninstall it?" \
+        IDYES DoUninstall IDNO FinishCallback
+DoUninstall: ; You have the same version as this installer.  This allows you to uninstall.
+    Exec "$UninstallString"
+    Quit
+
+InstallerIsOlder:
+    ;MessageBox MB_OK|MB_ICONSTOP \
+    ;    "You have a newer version of ${APPNAME}.$\nSetup will now exit."
+	;Quit
+	MessageBox MB_OK|MB_ICONSTOP \
+        "You have a newer version of ${APPNAME}.$\nPlease note downgrading is currently untested."
+	MessageBox MB_OK|MB_ICONQUESTION \
+        "Welcome to ${APPNAMEANDVERSION} Setup.$\nThis will allow you to downgrade from version $OLDVERSION."
+    Goto FinishCallback
+
 FinishCallback:
     ClearErrors
     ; Call CheckProcessorArchitecture
     ; Call CheckWindowsVersion
-FunctionEnd
-
-Function un.onInit
-!insertmacro Init "uninstaller"
 FunctionEnd
 ; eof

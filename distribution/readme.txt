@@ -1,5 +1,5 @@
-Last updated:    2024-02-04
-Release version: 0.4.8
+Last updated:    2015-12-04
+Release version: 0.0.3-1-beta
 ------------------------------------------------------------------------
 
 
@@ -30,7 +30,7 @@ includes some 3rd party software under different licenses. See the section
 ---- ----------
 The easiest way to contact the OpenRCT2 team is by submitting issues on GitHub
 (https://github.com/OpenRCT2/OpenRCT2) in the form of questions or bug reports.
-You can also chat with us on Discord (https://discordapp.com/invite/fsEwSWs).
+You can also chat with us on gitter (https://gitter.im/OpenRCT2/OpenRCT2).
 
 2.1) Reporting bugs
 ---- --------------
@@ -45,7 +45,8 @@ When you are sure it is not already reported you should:
    tracker for that fork which is most likely another GitHub repository.
  * Make it reproducible for the developers. In other words, create a savegame
    in which you can reproduce the issue once loaded. It is very useful to give
-   us the dump file as well, and a screenshot.
+   us the crash.dmp, crash.sav, crash.log and crash screenshot which are
+   created on crashes.
  * Check whether the bug is already reported on our bug tracker. This includes
    searching for recently closed bug reports as the bug might already be fixed.
 
@@ -55,21 +56,23 @@ following information in your bug report:
  * Bug details, including instructions how to reproduce it
  * Platform (Windows, Linux, FreeBSD, ...) and compiler (including version) if
    you compiled OpenRCT2 yourself.
- * The processor architecture of your OS (x86 Windows, x86-64 Windows,
-   Android on an ARM, Linux on a PowerPC, ...)
+ * The processor architecture of your OS (32 bits Windows, 64 bits Windows,
+   Linux on an ARM, Mac OS X on a PowerPC, ...)
  * The language and culture your operating system is using.
  * Attach a saved game *and* a screenshot if possible
  * If this bug only occurred recently please note the last version without
    the bug and the first version including the bug. That way we can fix it
    quicker by looking at the changes made.
- * Attach a crash dump (if your game crashed or froze).
+ * Attach crash.dmp, crash.log and crash.sav. These files are usually created
+   next to your openrct2.cfg. The crash handler will tell you the location.
 
 3.0) Supported platforms
 ---- -------------------
-OpenRCT2 is currently supported on Windows 7 and above, many distributions of
-Linux, macOS 10.13 or higher, Android, FreeBSD and OpenBSD. OpenRCT2 will only work on
-little-endian architectures.
-Further instructions can be found on GitHub.
+OpenRCT2 currently requires the original RollerCoaster Tycoon 2 binary. While
+this is still the case, the only supported platform is Windows. OpenRCT2 can
+still be played on other operating systems either via a virtual machine or a
+compatibility layer application such as Wine. Further instructions can be found
+on GitHub.
 
 4.0) Installing and running OpenRCT2
 ---- ------------------------------
@@ -79,9 +82,9 @@ be installed, or you have downloaded an installer, which will automatically
 extract OpenRCT2 in the given directory.
 
 OpenRCT2 requires an installation of RollerCoaster Tycoon 2 (RCT2) to run. You
-must have either installed the original RCT2 disc, the GOG version or the Steam
+must have either installed the original RCT2 disc, the GOG version or the steam
 version. Alternatively you can manually specify the location of where your RCT2
-data files are. These may be directly copied off of the original disc and placed in
+data files are. These may be directly copied of the original disc and placed in
 a directory of your choice.
 
 When you start OpenRCT2 for the first time, it will look for the RCT2 data files
@@ -92,26 +95,29 @@ in the following locations:
   - C:\Program Files (x86)\Infogrames Interactive\RollerCoaster Tycoon 2,
   - C:\Program Files\Atari\RollerCoaster Tycoon 2,
   - C:\Program Files (x86)\Atari\RollerCoaster Tycoon 2,
-  - C:\GOG Games\RollerCoaster Tycoon 2 Triple Thrill Pack,
-  - C:\Program Files\GalaxyClient\Games\RollerCoaster Tycoon 2 Triple Thrill Pack,
-  - C:\Program Files (x86)\GalaxyClient\Games\RollerCoaster Tycoon 2 Triple Thrill Pack,
-  - C:\Program Files\Steam\steamapps\common\Rollercoaster Tycoon 2,
-  - C:\Program Files (x86)\Steam\steamapps\common\Rollercoaster Tycoon 2,
+  - C:\GOG Games\RollerCoaster Tycoon 2 Triple Thrill Pack
   - The location of the openrct2.exe (where OpenRCT2 was extracted/installed)
 
 If none of these locations are found, OpenRCT2 will ask you to manually specify
 the directory. Alternatively after running OpenRCT2 for the first time, you can
-edit config.ini in the OpenRCT2 sub directory of your documents folder to set
+edit openrct2.cfg in the OpenRCT2 sub directory of your documents folder to set
 the RCT2 install path.
 
-OpenRCT2 supports setting a DPI scale in increments of .25. To set it, open the Options menu.
+If you are running Windows and have set a DPI scale, OpenRCT2 might look blury.
+This is because OpenRCT2 currently uses the original RollerCoaster Tycoon 2
+binary as a application host. However you can manually configure this binary to
+not be scaled. This will make the game more crisp, but may result in the
+interface being too small to see clearly and less ergonomic to use. To stop DPI
+scaling, right click the binary itself (openrct2.exe) in the install directory
+or the OpenRCT2 shortcut either in your start menu or on your desktop and then
+select properties. Select the compatibility tab, check
+"Disable display scaling on high DPI settings" and then click OK.
 
 If you wish to use Steam Overlay or capture game for video recording or
 streaming, you might have to enable hardware display in the options window.
 This will still render the graphics on the CPU but the pixel data will be
-displayed using either DirectX or OpenGL. This may also enable vertical
-synchronisation if supported by your graphics card and you have enabled
-"Uncap FPS".
+displayed using either DirectX or OpenGL. This might slow down the game but can
+also make the game look smoother.
 
 5.0) Development
 ---- -----------
@@ -124,7 +130,7 @@ information about the project, its roadmap and how to compile the source code.
 6.0) Translation
 ---- -----------
 For more information about the game's translation and how to contribute, please
-visit the GitHub page and wiki at (https://github.com/OpenRCT2/Localisation).
+visit the GitHub page and wiki at (https://github.com/OpenRCT2/OpenRCT2).
 
 7.0) Troubleshooting
 ---- ---------------
@@ -141,19 +147,13 @@ OpenRCT2 is licensed under the GNU General Public Licence version 3.0. For
 the complete licence text, see the file 'licence.txt'. This licence applies
 to all files in this distribution, except as noted below.
 
-dukglue          | MIT licence.
-duktape          | MIT licence.
-libcURL          | MIT (or Modified BSD-style) licence.
-libicu           | Unicode licence.
-libpng           | libpng licence.
-libspeex         | BSD-style licence.
-libzip           | BSD 3 clause licence.
-nlohmann-json    | MIT licence.
-OpenSSL          | OpenSSL Licence
-SDL2             | zlib licence.
-zlib             | zlib licence.
-Google Test      | BSD 3 clause licence.
-Google Benchmark | Apache 2.0 licence.
+argparse | MIT licence.
+CuTest   | zlib licence.
+Jansson  | MIT licence.
+libcURL  | MIT (or Modified BSD-style) licence.
+libspeex | BSD-style license.
+LodePNG  | zlib licence.
+SDL2     | zlib licence.
 
 Licences for sub-libraries used by the above may vary. For more information, visit the libraries' respective official websites.
 
